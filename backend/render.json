@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "name": "spotify-ai-playlist-backend",
+  "env": "node",
+  "buildCommand": "npm install",
+  "startCommand": "npm start"
+}
