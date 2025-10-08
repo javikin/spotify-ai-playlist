@@ -36,3 +36,5 @@ coverage/
 
 # Misc
 .cache/
+backend/.env
+frontend/.env
