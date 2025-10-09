@@ -217,27 +217,45 @@ app.post('/api/similar-to-artists', async (req, res) => {
 
     console.log('🎵 Buscando similares a artistas:', artistIds);
 
-    // Usar hasta 5 artistas como seeds (límite de Spotify)
-    const seedArtists = artistIds.slice(0, 5);
+    // NUEVO ENFOQUE: Obtener géneros de los artistas y buscar por género
+    // Primero obtener info de los artistas para conocer sus géneros
+    const artistsData = await Promise.all(
+      artistIds.slice(0, 5).map(id => spotifyApi.getArtist(id))
+    );
 
-    const options = {
-      limit: 50, // Pedimos más para poder filtrar
-      seed_artists: seedArtists
-    };
+    // Extraer géneros únicos de todos los artistas
+    const allGenres = artistsData.flatMap(artist => artist.body.genres);
+    const uniqueGenres = [...new Set(allGenres)].slice(0, 3); // Máximo 3 géneros
 
-    // Agregar parámetros de audio si están configurados
-    if (config?.energy !== undefined) options.target_energy = config.energy;
-    if (config?.valence !== undefined) options.target_valence = config.valence;
-    if (config?.tempo !== undefined) options.target_tempo = config.tempo;
+    console.log('🎭 Géneros encontrados:', uniqueGenres);
 
-    console.log('🔧 Opciones:', options);
+    // Construir query de búsqueda basado en los géneros
+    let searchQuery = '';
 
-    const recommendations = await spotifyApi.getRecommendations(options);
+    if (uniqueGenres.length > 0) {
+      // Usar géneros para buscar
+      searchQuery = `genre:${uniqueGenres.join(' OR genre:')}`;
+    } else {
+      // Fallback: buscar por nombre de los artistas (música similar)
+      const artistNames = artistsData.map(a => a.body.name);
+      searchQuery = artistNames.join(' OR ');
+    }
 
-    console.log('✅ Recomendaciones obtenidas:', recommendations.body.tracks.length);
+    console.log('🔎 Query de búsqueda:', searchQuery);
+
+    // Usar búsqueda en lugar de recommendations
+    const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=50`;
+
+    const response = await axios.get(searchUrl, {
+      headers: {
+        'Authorization': `Bearer ${access_token}`
+      }
+    });
+
+    console.log('✅ Canciones encontradas:', response.data.tracks.items.length);
 
     // Filtrar canciones de los artistas originales
-    const tracks = recommendations.body.tracks
+    const tracks = response.data.tracks.items
       .filter(track => {
         if (!track.artists || track.artists.length === 0) return false;
         const trackArtistId = track.artists[0].id;
@@ -281,22 +299,36 @@ app.post('/api/get-replacement-track', async (req, res) => {
     let tracks = [];
 
     if (artistIds && artistIds.length > 0) {
-      // Modo artistas similares
+      // Modo artistas similares - usar búsqueda por géneros
       console.log('🎤 Usando artistas:', artistIds);
-      const seedArtists = artistIds.slice(0, 5);
 
-      const options = {
-        limit: requestLimit,
-        seed_artists: seedArtists
-      };
+      // Obtener géneros de los artistas
+      const artistsData = await Promise.all(
+        artistIds.slice(0, 5).map(id => spotifyApi.getArtist(id))
+      );
 
-      if (config?.energy !== undefined) options.target_energy = config.energy;
-      if (config?.valence !== undefined) options.target_valence = config.valence;
-      if (config?.tempo !== undefined) options.target_tempo = config.tempo;
+      const allGenres = artistsData.flatMap(artist => artist.body.genres);
+      const uniqueGenres = [...new Set(allGenres)].slice(0, 3);
 
-      const recommendations = await spotifyApi.getRecommendations(options);
+      console.log('🎭 Géneros:', uniqueGenres);
 
-      tracks = recommendations.body.tracks
+      let searchQuery = '';
+      if (uniqueGenres.length > 0) {
+        searchQuery = `genre:${uniqueGenres.join(' OR genre:')}`;
+      } else {
+        const artistNames = artistsData.map(a => a.body.name);
+        searchQuery = artistNames.join(' OR ');
+      }
+
+      const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=${requestLimit}`;
+
+      const response = await axios.get(searchUrl, {
+        headers: {
+          'Authorization': `Bearer ${access_token}`
+        }
+      });
+
+      tracks = response.data.tracks.items
         .filter(track => {
           if (!track.artists || track.artists.length === 0) return false;
           const trackArtistId = track.artists[0].id;
