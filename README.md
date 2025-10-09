@@ -24,7 +24,7 @@ Aplicación web que te permite crear playlists de Spotify usando IA y descripcio
 
 Ve a https://developer.spotify.com/dashboard y en tu app:
 
-- **Redirect URIs**: Agrega `http://localhost:3000/callback`
+- **Redirect URIs**: Agrega `http://127.0.0.1:5001/auth/callback`
 - Guarda los cambios
 
 ### 2. Instalar dependencias
@@ -43,13 +43,16 @@ npm install
 
 ### 3. Configurar variables de entorno
 
-El archivo `backend/.env` ya está configurado con tus credenciales:
+Crea un archivo `backend/.env` con tus credenciales de Spotify:
 ```
-CLIENT_ID=6344da91f68d4e14b00d1ce552bad673
-CLIENT_SECRET=4268354b54fd4f39a9afb029b8aa7641
-REDIRECT_URI=http://localhost:3000/callback
-PORT=5000
+CLIENT_ID=tu_client_id_aqui
+CLIENT_SECRET=tu_client_secret_aqui
+REDIRECT_URI=http://127.0.0.1:5001/auth/callback
+PORT=5001
+FRONTEND_URL=http://127.0.0.1:8888
 ```
+
+Puedes usar el archivo `backend/.env.example` como plantilla.
 
 ## 🚀 Ejecutar la aplicación
 
@@ -61,7 +64,7 @@ cd backend
 npm start
 ```
 
-El servidor estará corriendo en http://localhost:5000
+El servidor estará corriendo en http://localhost:5001
 
 #### Terminal 2 - Frontend:
 ```bash
@@ -69,7 +72,7 @@ cd frontend
 npm start
 ```
 
-La aplicación se abrirá automáticamente en http://localhost:3000
+La aplicación se abrirá automáticamente en http://127.0.0.1:8888
 
 ### Opción 2: Con script automatizado
 
@@ -123,10 +126,10 @@ npm run dev
 
 ### Error: "INVALID_CLIENT"
 - Verifica que las credenciales en `.env` sean correctas
-- Asegúrate de que el Redirect URI en Spotify Dashboard sea exactamente `http://localhost:3000/callback`
+- Asegúrate de que el Redirect URI en Spotify Dashboard sea exactamente `http://127.0.0.1:5001/auth/callback`
 
 ### Error: "Cannot connect to server"
-- Asegúrate de que el backend esté corriendo en el puerto 5000
+- Asegúrate de que el backend esté corriendo en el puerto 5001
 - Verifica que no haya otro proceso usando el puerto
 
 ### No encuentra canciones
